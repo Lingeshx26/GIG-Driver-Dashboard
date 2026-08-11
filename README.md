@@ -1,4 +1,4 @@
-# Ride Log — Coimbatore Gig Tracker
+# Ride Log —  Gig Tracker
 
 Two pages:
 
