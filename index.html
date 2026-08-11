@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ride Log — Today</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="dash">
+
+  <!-- ===== HEADER ===== -->
+  <header class="cluster-header">
+    <div class="header-left">
+      <span class="eyebrow">GIG TRACKER · COIMBATORE</span>
+      <h1>Ride Log</h1>
+      <span class="bike-tag">Yamaha Rayzr Street Rally</span>
+    </div>
+    <div class="header-right">
+      <span class="sync-dot" id="syncDot"></span>
+      <span class="sync-label" id="syncLabel">Connecting…</span>
+    </div>
+  </header>
+
+  <nav class="page-nav">
+    <a href="index.html" class="page-nav-link is-active">Today</a>
+    <a href="history.html" class="page-nav-link">History</a>
+  </nav>
+
+  <!-- ===== DAY-COMPLETE SUMMARY (shown briefly right after ending a day) ===== -->
+  <section class="day-complete-card" id="dayCompleteCard" hidden>
+    <span class="day-card-title">Day complete ✓</span>
+    <div class="day-complete-figures" id="dayCompleteFigures"></div>
+    <div class="day-complete-actions">
+      <a href="history.html" class="btn-secondary">View in History</a>
+      <button type="button" class="btn-save" id="dismissDayComplete">Start next day</button>
+    </div>
+  </section>
+
+  <!-- ===== DAY CONTROL ===== -->
+  <section class="day-control" id="dayControl">
+    <!-- populated by today.js: either "start day" or "day active" state -->
+  </section>
+
+  <!-- ===== TODAY STRIP (live, only while day is active) ===== -->
+  <section class="odometer-block" id="odometerBlock" aria-label="Today's summary" hidden>
+    <div class="odo-primary">
+      <span class="odo-label">TODAY SO FAR</span>
+      <div class="odo-digits" id="todayNet">
+        <span class="rupee">₹</span><span class="digits">0</span>
+      </div>
+    </div>
+    <div class="odo-secondary">
+      <div class="odo-stat">
+        <span class="odo-stat-value" id="todayRides">0</span>
+        <span class="odo-stat-label">rides</span>
+      </div>
+      <div class="odo-divider"></div>
+      <div class="odo-stat">
+        <span class="odo-stat-value" id="todayCancelled">0</span>
+        <span class="odo-stat-label">cancelled</span>
+      </div>
+      <div class="odo-divider"></div>
+      <div class="odo-stat">
+        <span class="odo-stat-value" id="todayHours">0.0</span>
+        <span class="odo-stat-label">hours</span>
+      </div>
+    </div>
+    <div class="odo-payment-split">
+      <div class="pay-chip pay-chip-cash">
+        <span class="pay-chip-label">Cash</span>
+        <span class="pay-chip-value" id="todayCash">₹0</span>
+      </div>
+      <div class="pay-chip pay-chip-upi">
+        <span class="pay-chip-label">UPI</span>
+        <span class="pay-chip-value" id="todayUpi">₹0</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== QUICK RIDE LOG ===== -->
+  <section class="log-form-section">
+    <div class="locked-notice" id="lockedNotice">
+      Start your day above to begin logging rides.
+    </div>
+
+    <form id="rideForm" class="ride-form" hidden>
+
+      <button type="button" class="cancelled-toggle" id="cancelledToggle">
+        Ride cancelled? <span class="cancelled-toggle-state" id="cancelledToggleState">No</span>
+      </button>
+
+      <div class="field field-full">
+        <label>Platform</label>
+        <div class="pill-group" id="platformPills">
+          <button type="button" class="pill" data-value="Rapido">Rapido</button>
+          <button type="button" class="pill" data-value="Blinkit">Blinkit</button>
+          <button type="button" class="pill" data-value="Zomato">Zomato</button>
+          <button type="button" class="pill" data-value="Swiggy">Swiggy</button>
+          <button type="button" class="pill" data-value="Zepto">Zepto</button>
+          <button type="button" class="pill" data-value="Other">Other</button>
+        </div>
+      </div>
+
+      <div class="field field-full">
+        <label for="pickupZone">Pickup — from</label>
+        <select id="pickupZone">
+          <option value="" disabled selected>Select pickup zone</option>
+        </select>
+      </div>
+
+      <div class="field field-full money-field" id="dropField">
+        <label for="dropLocation">Drop — to <span class="optional">optional</span></label>
+        <input type="text" id="dropLocation" placeholder="e.g. Race Course, RS Puram">
+      </div>
+
+      <div class="field field-full money-field" id="fareField">
+        <label for="fare">Fare received (₹)</label>
+        <input type="number" id="fare" min="0" step="1" placeholder="0" inputmode="numeric" autocomplete="off">
+      </div>
+
+      <button type="button" class="extras-toggle money-field" id="extrasToggle" data-open="false">
+        + Add tip / extra charge
+      </button>
+
+      <div class="extras-fields money-field" id="extrasFields" hidden>
+        <div class="field">
+          <label for="tip">Tip (₹)</label>
+          <input type="number" id="tip" min="0" step="1" placeholder="0" inputmode="numeric" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="extra">Extra charges (₹)</label>
+          <input type="number" id="extra" min="0" step="1" placeholder="0" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="field field-full money-field" id="paymentField">
+        <label>Payment mode</label>
+        <div class="pill-group pill-group-payment" id="paymentPills">
+          <button type="button" class="pill pill-cash" data-value="Cash">Cash</button>
+          <button type="button" class="pill pill-upi" data-value="UPI">UPI</button>
+        </div>
+      </div>
+
+      <div class="field field-full">
+        <label for="rideNotes">Notes <span class="optional">optional</span></label>
+        <input type="text" id="rideNotes" placeholder="Rain, waited long, customer not answering, etc.">
+      </div>
+
+      <button type="submit" class="btn-save" id="saveBtn">
+        <span id="saveBtnText">Log ride</span>
+      </button>
+    </form>
+  </section>
+
+  <!-- ===== TODAY'S RIDES (quick glance, most recent first) ===== -->
+  <section class="recent-rides" id="recentRidesSection" hidden>
+    <h2><span class="section-num">•</span> Logged today</h2>
+    <div class="recent-list" id="recentList"></div>
+  </section>
+
+  <footer class="dash-footer">
+    <p>Synced to Google Sheets · <a href="#" id="sheetLink" target="_blank" rel="noopener">Open sheet</a></p>
+  </footer>
+
+</div>
+
+<!-- ===== END DAY MODAL ===== -->
+<div class="modal-overlay" id="endDayOverlay" hidden>
+  <div class="modal">
+    <h2 class="modal-title">End your day</h2>
+    <form id="endDayForm">
+      <div class="field field-full">
+        <label for="endKm">Odometer reading now (km) — required</label>
+        <input type="number" id="endKm" min="0" step="1" inputmode="numeric" autocomplete="off">
+      </div>
+      <div class="field field-full">
+        <label for="fuelCost">Fuel &amp; expenses today (₹) — required</label>
+        <input type="number" id="fuelCost" min="0" step="1" placeholder="0" inputmode="numeric" autocomplete="off">
+      </div>
+      <div class="field field-full">
+        <label for="bonus">Bonus / incentive (₹) <span class="optional">optional</span></label>
+        <input type="number" id="bonus" min="0" step="1" placeholder="0" inputmode="numeric" autocomplete="off">
+      </div>
+      <div class="field field-full">
+        <label for="dayNotes">Notes <span class="optional">optional</span></label>
+        <input type="text" id="dayNotes" placeholder="Rain, breakdown, etc.">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="cancelEndDay">Cancel</button>
+        <button type="submit" class="btn-save" id="finishDayBtn" disabled>Finish day</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script src="today.js"></script>
+</body>
+</html>

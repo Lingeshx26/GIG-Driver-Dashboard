@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ride Log — History</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="dash">
+
+  <!-- ===== HEADER ===== -->
+  <header class="cluster-header">
+    <div class="header-left">
+      <span class="eyebrow">GIG TRACKER · COIMBATORE</span>
+      <h1>History</h1>
+      <span class="bike-tag">Yamaha Rayzr Street Rally</span>
+    </div>
+    <div class="header-right">
+      <span class="sync-dot" id="syncDot"></span>
+      <span class="sync-label" id="syncLabel">Connecting…</span>
+    </div>
+  </header>
+
+  <nav class="page-nav">
+    <a href="index.html" class="page-nav-link">Today</a>
+    <a href="history.html" class="page-nav-link is-active">History</a>
+  </nav>
+
+  <!-- ===== RANGE SUMMARY STRIP ===== -->
+  <section class="range-strip">
+    <div class="range-tabs" role="tablist" aria-label="Time range">
+      <button class="range-tab is-active" data-range="week">This week</button>
+      <button class="range-tab" data-range="month">This month</button>
+      <button class="range-tab" data-range="all">All time</button>
+    </div>
+    <div class="range-figures">
+      <div class="range-figure">
+        <span class="range-figure-value" id="rangeNet">₹0</span>
+        <span class="range-figure-label">net income</span>
+      </div>
+      <div class="range-figure">
+        <span class="range-figure-value" id="rangeAvg">₹0</span>
+        <span class="range-figure-label">avg / day</span>
+      </div>
+      <div class="range-figure">
+        <span class="range-figure-value" id="rangeBestZone">—</span>
+        <span class="range-figure-label">best pickup zone</span>
+      </div>
+      <div class="range-figure">
+        <span class="range-figure-value" id="rangeBestPlatform">—</span>
+        <span class="range-figure-label">best platform</span>
+      </div>
+      <div class="range-figure">
+        <span class="range-figure-value" id="rangeTips">₹0</span>
+        <span class="range-figure-label">tips collected</span>
+      </div>
+      <div class="range-figure">
+        <span class="range-figure-value" id="rangeCancelled">0</span>
+        <span class="range-figure-label">cancelled rides</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== RIDE LOG TABLE ===== -->
+  <section class="log-table-section">
+    <h2><span class="section-num">01</span> Ride-by-ride log</h2>
+    <div class="table-wrap">
+      <table class="log-table" id="rideTable">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Platform</th>
+            <th>From → To</th>
+            <th>Total</th>
+            <th>Pay</th>
+          </tr>
+        </thead>
+        <tbody id="rideTableBody">
+          <tr class="empty-row"><td colspan="5">No rides logged yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== DAY SUMMARY TABLE ===== -->
+  <section class="log-table-section">
+    <h2><span class="section-num">02</span> Day summary</h2>
+    <div class="table-wrap">
+      <table class="log-table" id="dayTable">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>KM</th>
+            <th>Fuel</th>
+            <th>Bonus</th>
+            <th>Net</th>
+            <th>₹/km</th>
+          </tr>
+        </thead>
+        <tbody id="dayTableBody">
+          <tr class="empty-row"><td colspan="6">No days closed out yet.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="dash-footer">
+    <p>Synced to Google Sheets · <a href="#" id="sheetLink" target="_blank" rel="noopener">Open sheet</a></p>
+  </footer>
+
+</div>
+
+<script src="shared.js"></script>
+<script src="history.js"></script>
+</body>
+</html>
