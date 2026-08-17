@@ -783,6 +783,8 @@ input::placeholder { color: var(--text-faint); }
   border: 1px solid var(--hairline);
   border-radius: var(--radius);
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 380px;
   position: relative;
 }
 
@@ -815,6 +817,10 @@ input::placeholder { color: var(--text-faint); }
   color: var(--text-faint);
   padding: 12px 14px;
   border-bottom: 1px solid var(--hairline);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 1;
 }
 
 .log-table td {
