@@ -1,5 +1,5 @@
 /**
- * Gig Tracker — Google Sheets backend (v3: pickup/drop, tips, extras, cancelled rides).
+ * Gig Tracker — Google Sheets backend (v4: GPS pickup/drop, route distance).
  *
  * Setup:
  * 1. In your Sheet, keep two tabs named exactly:  Days   and   Rides
@@ -7,8 +7,8 @@
  *    Days tab — row 1 headers (A → I), unchanged from before:
  *    Date | Start Time | Start KM | End Time | End KM | Total KM | Fuel Cost | Bonus | Notes
  *
- *    Rides tab — row 1 headers (A → K):
- *    Timestamp | Date | Platform | Pickup Zone | Drop Location | Fare | Tip | Extra Charges | Payment Mode | Cancelled | Notes
+ *    Rides tab — row 1 headers (A → S):
+ *    Timestamp | Date | Platform | Pickup Zone | Pickup Address | Pickup Lat | Pickup Lng | Start Time | Drop Location | Drop Lat | Drop Lng | Distance KM | End Time | Fare | Tip | Extra Charges | Payment Mode | Cancelled | Notes
  *
  * 2. Extensions > Apps Script. Delete any existing code and paste this file in.
  * 3. Deploy > Manage deployments > pencil icon > Version: New version > Deploy.
@@ -47,17 +47,25 @@ function handleRide(ss, body) {
   const sheet = ss.getSheetByName(RIDES_SHEET);
   const cancelled = !!body.cancelled;
   sheet.appendRow([
-    new Date(),                                  // Timestamp
-    body.date || '',                              // Date
-    body.platform || '',                          // Platform
-    body.pickupZone || '',                        // Pickup Zone
-    cancelled ? '' : (body.dropLocation || ''),    // Drop Location
-    cancelled ? 0 : (body.fare || 0),              // Fare
-    cancelled ? 0 : (body.tip || 0),               // Tip
-    cancelled ? 0 : (body.extra || 0),             // Extra Charges
-    cancelled ? '' : (body.paymentMode || ''),     // Payment Mode
-    cancelled,                                     // Cancelled
-    body.notes || ''                               // Notes
+    new Date(),                                                     // Timestamp (server-side log time)
+    body.date || '',                                                 // Date
+    body.platform || '',                                             // Platform
+    body.pickupZone || '',                                           // Pickup Zone
+    body.pickupAddress || '',                                        // Pickup Address
+    body.pickupLat != null ? body.pickupLat : '',                    // Pickup Lat
+    body.pickupLng != null ? body.pickupLng : '',                    // Pickup Lng
+    body.rideStartTime || body.time || '',                           // Start Time
+    cancelled ? '' : (body.dropLocation || ''),                      // Drop Location
+    cancelled ? '' : (body.dropLat != null ? body.dropLat : ''),     // Drop Lat
+    cancelled ? '' : (body.dropLng != null ? body.dropLng : ''),     // Drop Lng
+    cancelled ? '' : (body.distanceKm != null ? body.distanceKm : ''), // Distance KM
+    body.rideEndTime || '',                                          // End Time
+    cancelled ? 0 : (body.fare || 0),                                // Fare
+    cancelled ? 0 : (body.tip || 0),                                 // Tip
+    cancelled ? 0 : (body.extra || 0),                               // Extra Charges
+    cancelled ? '' : (body.paymentMode || ''),                       // Payment Mode
+    cancelled,                                                       // Cancelled
+    body.notes || ''                                                 // Notes
   ]);
 }
 
