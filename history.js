@@ -108,6 +108,7 @@ function renderRideTable() {
           <td>${shortZone(r.pickupZone)} · cancelled</td>
           <td>—</td>
           <td>—</td>
+          <td>—</td>
         </tr>
       `;
     }
@@ -117,6 +118,7 @@ function renderRideTable() {
         <td>${isPeak(r.time) ? '<span class="peak-dot" title="Peak hours"></span>' : ''}${r.time || '—'}</td>
         <td>${r.platform}</td>
         <td>${route}</td>
+        <td>${r.distanceKm != null ? r.distanceKm + ' km' : '—'}</td>
         <td>${formatMoney(rideTotal(r))}</td>
         <td><span class="pay-tag ${r.paymentMode === 'Cash' ? 'pay-tag-cash' : 'pay-tag-upi'}">${r.paymentMode}</span></td>
       </tr>

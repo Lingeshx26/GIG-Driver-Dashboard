@@ -23,6 +23,96 @@ const ZONES = [
   'Other'
 ];
 
+const PLATFORMS = ['Rapido', 'Blinkit'];
+
+// Rough centroid coordinates for each zone, used only to auto-suggest the
+// nearest match after a GPS fix. Approximate on purpose — always editable,
+// never treated as authoritative.
+const ZONE_COORDS = {
+  'Gandhipuram / Ukkadam': { lat: 11.0090, lng: 76.9558 },
+  'Coimbatore Junction / Podanur': { lat: 11.0018, lng: 76.9628 },
+  'Peelamedu / Airport / PSG Tech': { lat: 11.0280, lng: 77.0200 },
+  'Saravanampatti / Kalapatti (IT corridor)': { lat: 11.0730, lng: 77.0107 },
+  'RS Puram / Race Course / Avinashi Rd': { lat: 11.0070, lng: 76.9600 },
+  'Singanallur / Hope College': { lat: 11.0016, lng: 77.0200 }
+};
+
+/* ============================================
+   GPS, REVERSE GEOCODING, DISTANCE
+   No API keys needed:
+   - Geolocation: built into the browser
+   - Reverse geocoding: Nominatim (OpenStreetMap), free
+   - Route distance: OSRM public server, free — falls back to a
+     straight-line estimate if it's unreachable
+   ============================================ */
+function getCurrentPosition(options = {}) {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('Geolocation not supported on this device/browser'));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (err) => reject(err),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0, ...options }
+    );
+  });
+}
+
+async function reverseGeocode(lat, lng) {
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=17&addressdetails=1`);
+    const data = await res.json();
+    return shortAddress(data);
+  } catch (e) {
+    return `${lat.toFixed(5)}, ${lng.toFixed(5)}`; // fallback: raw coordinates, still usable
+  }
+}
+
+function shortAddress(nominatimData) {
+  const a = nominatimData.address || {};
+  const parts = [
+    a.road || a.pedestrian || a.neighbourhood,
+    a.suburb || a.residential || a.city_district
+  ].filter(Boolean);
+  if (parts.length) return parts.join(', ');
+  return (nominatimData.display_name || '').split(',').slice(0, 2).join(',').trim();
+}
+
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+async function routeDistanceKm(pickupLat, pickupLng, dropLat, dropLng) {
+  try {
+    const url = `https://router.project-osrm.org/route/v1/driving/${pickupLng},${pickupLat};${dropLng},${dropLat}?overview=false`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.routes && data.routes[0]) {
+      return { km: Math.round((data.routes[0].distance / 1000) * 10) / 10, estimated: false };
+    }
+    throw new Error('No route found');
+  } catch (e) {
+    // OSRM unreachable or no route — fall back to a straight-line estimate,
+    // clearly flagged as such rather than presented as exact
+    return { km: Math.round(haversineKm(pickupLat, pickupLng, dropLat, dropLng) * 10) / 10, estimated: true };
+  }
+}
+
+function nearestZone(lat, lng) {
+  let best = null;
+  let bestDist = Infinity;
+  Object.entries(ZONE_COORDS).forEach(([zone, c]) => {
+    const d = haversineKm(lat, lng, c.lat, c.lng);
+    if (d < bestDist) { bestDist = d; best = zone; }
+  });
+  return best;
+}
+
 /* ============================================
    SHARED STATE (populated by loadFromSheet)
    ============================================ */
@@ -53,6 +143,32 @@ function saveActiveDayToStorage(activeDay) {
     localStorage.setItem('activeDay', JSON.stringify(activeDay));
   } else {
     localStorage.removeItem('activeDay');
+  }
+}
+
+/* ============================================
+   PENDING RIDE — the ride between "Start Ride" and
+   "End Ride". Persisted locally so a refresh mid-ride
+   doesn't lose the captured pickup point.
+   ============================================ */
+function loadPendingRideFromStorage() {
+  const raw = localStorage.getItem('pendingRide');
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed.date === todayStr()) return parsed;
+    localStorage.removeItem('pendingRide'); // stale ride from a previous date, never finished
+  } catch (e) {
+    localStorage.removeItem('pendingRide');
+  }
+  return null;
+}
+
+function savePendingRideToStorage(pendingRide) {
+  if (pendingRide) {
+    localStorage.setItem('pendingRide', JSON.stringify(pendingRide));
+  } else {
+    localStorage.removeItem('pendingRide');
   }
 }
 
@@ -125,13 +241,19 @@ async function loadFromSheet() {
 }
 
 function normalizeRideRow(row) {
-  const ts = String(row['Timestamp'] || '');
   return {
     date: row['Date'] || '',
-    time: ts.length >= 16 ? ts.slice(11, 16) : '',
+    time: row['Start Time'] || '',
     platform: row['Platform'] || '',
     pickupZone: row['Pickup Zone'] || '',
+    pickupAddress: row['Pickup Address'] || '',
+    pickupLat: row['Pickup Lat'] !== '' && row['Pickup Lat'] != null ? Number(row['Pickup Lat']) : null,
+    pickupLng: row['Pickup Lng'] !== '' && row['Pickup Lng'] != null ? Number(row['Pickup Lng']) : null,
     dropLocation: row['Drop Location'] || '',
+    dropLat: row['Drop Lat'] !== '' && row['Drop Lat'] != null ? Number(row['Drop Lat']) : null,
+    dropLng: row['Drop Lng'] !== '' && row['Drop Lng'] != null ? Number(row['Drop Lng']) : null,
+    distanceKm: row['Distance KM'] !== '' && row['Distance KM'] != null ? Number(row['Distance KM']) : null,
+    rideEndTime: row['End Time'] || '',
     fare: Number(row['Fare']) || 0,
     tip: Number(row['Tip']) || 0,
     extra: Number(row['Extra Charges']) || 0,

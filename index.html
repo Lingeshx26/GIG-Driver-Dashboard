@@ -82,40 +82,83 @@
     </div>
   </section>
 
-  <!-- ===== QUICK RIDE LOG ===== -->
+  <!-- ===== RIDE CONTROL: Start Ride / Ride in progress ===== -->
   <section class="log-form-section">
     <div class="locked-notice" id="lockedNotice">
       Start your day above to begin logging rides.
     </div>
 
-    <form id="rideForm" class="ride-form" hidden>
-
-      <button type="button" class="cancelled-toggle" id="cancelledToggle">
-        Ride cancelled? <span class="cancelled-toggle-state" id="cancelledToggleState">No</span>
-      </button>
-
+    <form id="startRideForm" class="ride-form" hidden>
       <div class="field field-full">
         <label>Platform</label>
         <div class="pill-group" id="platformPills">
           <button type="button" class="pill" data-value="Rapido">Rapido</button>
           <button type="button" class="pill" data-value="Blinkit">Blinkit</button>
-          <button type="button" class="pill" data-value="Zomato">Zomato</button>
-          <button type="button" class="pill" data-value="Swiggy">Swiggy</button>
-          <button type="button" class="pill" data-value="Zepto">Zepto</button>
-          <button type="button" class="pill" data-value="Other">Other</button>
         </div>
       </div>
 
       <div class="field field-full">
-        <label for="pickupZone">Pickup — from</label>
+        <label for="pickupZone">Pickup zone</label>
         <select id="pickupZone">
           <option value="" disabled selected>Select pickup zone</option>
         </select>
       </div>
 
+      <div class="field field-full">
+        <label for="pickupAddress">Pickup location</label>
+        <div class="gps-row">
+          <input type="text" id="pickupAddress" placeholder="Tap GPS, or type it in">
+          <button type="button" class="gps-btn" id="getPickupBtn">📍 GPS</button>
+        </div>
+        <span class="gps-status" id="pickupGpsStatus"></span>
+      </div>
+
+      <button type="submit" class="btn-save" id="startRideBtn" disabled>Start Ride</button>
+    </form>
+
+    <div class="ride-active-card" id="rideActiveCard" hidden>
+      <div class="ride-active-info">
+        <span class="ride-active-status"><span class="live-dot"></span>Ride in progress</span>
+        <span class="ride-active-detail" id="rideActiveDetail"></span>
+      </div>
+      <button type="button" class="btn-end-ride" id="endRideBtn">End Ride</button>
+    </div>
+  </section>
+
+  <!-- ===== TODAY'S RIDES (quick glance, most recent first) ===== -->
+  <section class="recent-rides" id="recentRidesSection" hidden>
+    <h2><span class="section-num">•</span> Logged today</h2>
+    <div class="recent-list" id="recentList"></div>
+  </section>
+
+  <footer class="dash-footer">
+    <p>Synced to Google Sheets · <a href="#" id="sheetLink" target="_blank" rel="noopener">Open sheet</a></p>
+  </footer>
+
+</div>
+
+<!-- ===== END RIDE MODAL ===== -->
+<div class="modal-overlay" id="endRideOverlay" hidden>
+  <div class="modal">
+    <h2 class="modal-title">End ride</h2>
+    <form id="endRideForm">
+
+      <button type="button" class="cancelled-toggle" id="rideCancelledToggle">
+        Ride cancelled? <span class="cancelled-toggle-state" id="rideCancelledToggleState">No</span>
+      </button>
+
       <div class="field field-full money-field" id="dropField">
-        <label for="dropLocation">Drop — to <span class="optional">optional</span></label>
-        <input type="text" id="dropLocation" placeholder="e.g. Race Course, RS Puram">
+        <label for="dropAddress">Drop location</label>
+        <div class="gps-row">
+          <input type="text" id="dropAddress" placeholder="Tap GPS, or type it in">
+          <button type="button" class="gps-btn" id="getDropBtn">📍 GPS</button>
+        </div>
+        <span class="gps-status" id="dropGpsStatus"></span>
+      </div>
+
+      <div class="field field-full money-field" id="distanceField" hidden>
+        <label>Distance</label>
+        <div class="distance-display" id="distanceDisplay">—</div>
       </div>
 
       <div class="field field-full money-field" id="fareField">
@@ -151,22 +194,12 @@
         <input type="text" id="rideNotes" placeholder="Rain, waited long, customer not answering, etc.">
       </div>
 
-      <button type="submit" class="btn-save" id="saveBtn">
-        <span id="saveBtnText">Log ride</span>
-      </button>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="cancelEndRide">Not yet</button>
+        <button type="submit" class="btn-save" id="finishRideBtn" disabled>Finish ride</button>
+      </div>
     </form>
-  </section>
-
-  <!-- ===== TODAY'S RIDES (quick glance, most recent first) ===== -->
-  <section class="recent-rides" id="recentRidesSection" hidden>
-    <h2><span class="section-num">•</span> Logged today</h2>
-    <div class="recent-list" id="recentList"></div>
-  </section>
-
-  <footer class="dash-footer">
-    <p>Synced to Google Sheets · <a href="#" id="sheetLink" target="_blank" rel="noopener">Open sheet</a></p>
-  </footer>
-
+  </div>
 </div>
 
 <!-- ===== END DAY MODAL ===== -->

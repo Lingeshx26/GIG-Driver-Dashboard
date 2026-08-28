@@ -258,6 +258,113 @@ a { color: var(--amber); }
 .btn-end-day:hover { border-color: var(--red); color: var(--red); }
 
 /* ============================================
+   GPS CAPTURE (Start Ride pickup, End Ride drop)
+   ============================================ */
+.gps-row {
+  display: flex;
+  gap: 8px;
+}
+.gps-row input { flex: 1; }
+
+.gps-btn {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--bg);
+  background: var(--blue);
+  border: none;
+  border-radius: 6px;
+  padding: 0 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.gps-btn:hover { filter: brightness(1.08); }
+.gps-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.gps-status {
+  display: block;
+  font-size: 11px;
+  margin-top: 4px;
+  min-height: 14px;
+}
+.gps-status-loading { color: var(--text-faint); }
+.gps-status-ok { color: var(--green); }
+.gps-status-error { color: var(--red); }
+
+.distance-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--amber);
+  background: var(--surface-hi);
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+/* ============================================
+   RIDE IN PROGRESS (blue accent — distinct from
+   the green day-in-progress card)
+   ============================================ */
+.ride-active-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--blue);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+
+.ride-active-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ride-active-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--blue);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ride-active-status .live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--blue);
+  box-shadow: 0 0 6px rgba(77, 157, 224, 0.8);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.ride-active-detail {
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.btn-end-ride {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface-hi);
+  border: 1px solid var(--blue-dim);
+  border-radius: 6px;
+  padding: 10px 16px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.btn-end-ride:hover { border-color: var(--blue); color: var(--blue); }
+
+/* ============================================
    DAY-COMPLETE CARD
    ============================================ */
 .day-complete-card {
@@ -783,8 +890,6 @@ input::placeholder { color: var(--text-faint); }
   border: 1px solid var(--hairline);
   border-radius: var(--radius);
   overflow-x: auto;
-  overflow-y: auto;
-  max-height: 380px;
   position: relative;
 }
 
@@ -817,10 +922,6 @@ input::placeholder { color: var(--text-faint); }
   color: var(--text-faint);
   padding: 12px 14px;
   border-bottom: 1px solid var(--hairline);
-  position: sticky;
-  top: 0;
-  background: var(--surface);
-  z-index: 1;
 }
 
 .log-table td {
@@ -933,6 +1034,8 @@ input::placeholder { color: var(--text-faint); }
   .odo-digits .rupee { font-size: 22px; }
   .day-active-card { flex-direction: column; align-items: stretch; text-align: left; }
   .btn-end-day { width: 100%; }
+  .ride-active-card { flex-direction: column; align-items: stretch; text-align: left; }
+  .btn-end-ride { width: 100%; }
   .extras-fields { grid-template-columns: 1fr; }
 }
 

@@ -2,9 +2,11 @@
    PAGE STATE
    ============================================ */
 let activeDay = null;
+let pendingRide = null;
 let selectedPlatform = null;
 let selectedPayment = null;
-let isCancelled = false;
+let isRideCancelled = false;
+let lastComputedDistance = null; // { km, estimated } or null
 
 /* ============================================
    INIT
@@ -14,17 +16,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   populateZoneOptions();
   activeDay = loadActiveDayFromStorage();
+  pendingRide = loadPendingRideFromStorage();
   selectedPlatform = localStorage.getItem('lastPlatform') || null;
   selectedPayment = localStorage.getItem('lastPayment') || null;
 
   bindDayControl();
-  bindCancelledToggle();
-  bindExtrasToggle();
-  bindRideForm();
+  bindStartRideForm();
+  bindEndRideModal();
   bindEndDayModal();
 
   renderDayControl();
-  renderRideForm();
+  renderRideSection();
 
   // Show last-known data instantly (if any) while the fresh fetch loads in the background
   if (loadCachedData()) {
@@ -60,7 +62,6 @@ function bindDayControl() {
     if (e.target.id === 'endDayBtn') openEndDayModal();
   });
 
-  // Delegated input listener to toggle the Start Day button live
   $('dayControl').addEventListener('input', (e) => {
     if (e.target.id === 'startKmInput') {
       const btn = $('startDayBtn');
@@ -118,7 +119,7 @@ function onStartDay() {
   saveActiveDayToStorage(activeDay);
   $('dayCompleteCard').hidden = true;
   renderDayControl();
-  renderRideForm();
+  renderRideSection();
   renderTodayStrip();
   renderRecentRides();
 
@@ -204,7 +205,7 @@ function onEndDaySubmit(e) {
   saveActiveDayToStorage(null);
   closeEndDayModal();
   renderDayControl();
-  renderRideForm();
+  renderRideSection();
   showDayCompleteCard({ net, km: totalKm, rides: todayRides.length - cancelledCount, cancelled: cancelledCount });
 }
 
@@ -221,55 +222,63 @@ function showDayCompleteCard(summary) {
 }
 
 /* ============================================
-   CANCELLED-RIDE TOGGLE
+   GPS CAPTURE (shared by Start Ride's pickup field
+   and End Ride's drop field)
    ============================================ */
-function bindCancelledToggle() {
-  $('cancelledToggle').addEventListener('click', () => {
-    isCancelled = !isCancelled;
-    $('cancelledToggleState').textContent = isCancelled ? 'Yes' : 'No';
-    $('cancelledToggle').classList.toggle('is-active', isCancelled);
-    document.querySelectorAll('#rideForm .money-field').forEach(el => { el.hidden = isCancelled; });
-    if (isCancelled) $('extrasFields').hidden = true;
-  });
+async function fetchGpsInto(inputId, statusId, isPickup) {
+  const statusEl = $(statusId);
+  statusEl.textContent = 'Getting location…';
+  statusEl.className = 'gps-status gps-status-loading';
+  try {
+    const pos = await getCurrentPosition();
+    const address = await reverseGeocode(pos.lat, pos.lng);
+    $(inputId).value = address;
+    $(inputId).dataset.lat = pos.lat;
+    $(inputId).dataset.lng = pos.lng;
+
+    if (isPickup) {
+      const nearest = nearestZone(pos.lat, pos.lng);
+      if (nearest) {
+        $('pickupZone').value = nearest;
+        localStorage.setItem('lastPickupZone', nearest);
+      }
+    }
+
+    statusEl.textContent = 'Location captured — edit if it looks off';
+    statusEl.className = 'gps-status gps-status-ok';
+    $(inputId).dispatchEvent(new Event('input'));
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = "Couldn't get a location — type it in instead";
+    statusEl.className = 'gps-status gps-status-error';
+  }
 }
 
 /* ============================================
-   TIP / EXTRA CHARGE COLLAPSIBLE
+   START RIDE
    ============================================ */
-function bindExtrasToggle() {
-  $('extrasToggle').addEventListener('click', () => {
-    const isOpen = $('extrasToggle').dataset.open === 'true';
-    $('extrasToggle').dataset.open = String(!isOpen);
-    $('extrasFields').hidden = isOpen;
-    $('extrasToggle').textContent = isOpen ? '+ Add tip / extra charge' : '− Hide tip / extra charge';
-  });
-}
-
-/* ============================================
-   RIDE FORM
-   ============================================ */
-function bindRideForm() {
+function bindStartRideForm() {
   $('platformPills').addEventListener('click', (e) => {
     const btn = e.target.closest('.pill');
     if (!btn) return;
     selectedPlatform = btn.dataset.value;
     localStorage.setItem('lastPlatform', selectedPlatform);
     updatePillSelection('platformPills', selectedPlatform);
-  });
-
-  $('paymentPills').addEventListener('click', (e) => {
-    const btn = e.target.closest('.pill');
-    if (!btn) return;
-    selectedPayment = btn.dataset.value;
-    localStorage.setItem('lastPayment', selectedPayment);
-    updatePillSelection('paymentPills', selectedPayment);
+    updateStartRideButtonState();
   });
 
   $('pickupZone').addEventListener('change', () => {
     localStorage.setItem('lastPickupZone', $('pickupZone').value);
+    updateStartRideButtonState();
   });
 
-  $('rideForm').addEventListener('submit', onRideSubmit);
+  $('pickupAddress').addEventListener('input', updateStartRideButtonState);
+
+  $('getPickupBtn').addEventListener('click', () => fetchGpsInto('pickupAddress', 'pickupGpsStatus', true));
+
+  $('startRideForm').addEventListener('submit', onStartRide);
+
+  $('endRideBtn').addEventListener('click', openEndRideModal);
 }
 
 function updatePillSelection(groupId, value) {
@@ -278,69 +287,204 @@ function updatePillSelection(groupId, value) {
   });
 }
 
-function renderRideForm() {
-  const locked = !activeDay;
-  $('lockedNotice').hidden = !locked;
-  $('rideForm').hidden = locked;
-  $('recentRidesSection').hidden = locked;
-  if (locked) return;
-
-  updatePillSelection('platformPills', selectedPlatform);
-  updatePillSelection('paymentPills', selectedPayment);
+function updateStartRideButtonState() {
+  const ok = !!selectedPlatform && !!$('pickupZone').value && $('pickupAddress').value.trim() !== '';
+  $('startRideBtn').disabled = !ok;
 }
 
-async function onRideSubmit(e) {
+function onStartRide(e) {
   e.preventDefault();
-  if (!activeDay) return;
+  if (!selectedPlatform || !$('pickupZone').value || !$('pickupAddress').value.trim()) return;
 
-  if (!selectedPlatform) { $('platformPills').scrollIntoView({ block: 'center' }); return; }
-  if (!$('pickupZone').value) { $('pickupZone').focus(); return; }
-  if (!isCancelled && !selectedPayment) { $('paymentPills').scrollIntoView({ block: 'center' }); return; }
-
-  const saveBtn = $('saveBtn');
-  const saveBtnText = $('saveBtnText');
-
-  const entry = {
-    date: activeDay.date,
-    time: nowTimeStr(),
+  pendingRide = {
+    date: todayStr(),
+    startTime: nowTimeStr(),
     platform: selectedPlatform,
     pickupZone: $('pickupZone').value,
-    dropLocation: isCancelled ? '' : ($('dropLocation').value || ''),
-    fare: isCancelled ? 0 : (Number($('fare').value) || 0),
-    tip: isCancelled ? 0 : (Number($('tip').value) || 0),
-    extra: isCancelled ? 0 : (Number($('extra').value) || 0),
-    paymentMode: isCancelled ? '' : selectedPayment,
-    cancelled: isCancelled,
-    notes: $('rideNotes').value || ''
+    pickupAddress: $('pickupAddress').value.trim(),
+    pickupLat: $('pickupAddress').dataset.lat ? Number($('pickupAddress').dataset.lat) : null,
+    pickupLng: $('pickupAddress').dataset.lng ? Number($('pickupAddress').dataset.lng) : null
   };
+  savePendingRideToStorage(pendingRide);
 
-  saveBtn.disabled = true;
-  saveBtnText.textContent = 'Saving…';
+  // Reset pickup-specific fields for next time; platform/zone selection carries over
+  $('pickupAddress').value = '';
+  delete $('pickupAddress').dataset.lat;
+  delete $('pickupAddress').dataset.lng;
+  $('pickupGpsStatus').textContent = '';
 
-  rides.push(entry);
-  saveCachedData();
-  renderTodayStrip();
-  renderRecentRides();
+  renderRideSection();
+}
 
-  try {
-    await postToSheet({ kind: 'ride', ...entry });
-    saveBtnText.textContent = 'Logged ✓';
-    setSyncState('live');
-  } catch (err) {
-    saveBtnText.textContent = 'Saved locally (sync failed)';
-    setSyncState('error');
-    console.error(err);
+/* ============================================
+   RIDE SECTION RENDERING (Start Ride vs In Progress)
+   ============================================ */
+function renderRideSection() {
+  const dayLocked = !activeDay;
+  const rideInProgress = !!pendingRide;
+
+  $('lockedNotice').hidden = !dayLocked;
+  $('startRideForm').hidden = dayLocked || rideInProgress;
+  $('rideActiveCard').hidden = dayLocked || !rideInProgress;
+  $('recentRidesSection').hidden = dayLocked;
+
+  if (dayLocked) return;
+
+  if (rideInProgress) {
+    $('rideActiveDetail').textContent = `${pendingRide.platform} · ${shortZone(pendingRide.pickupZone)} · started ${pendingRide.startTime}`;
+  } else {
+    updatePillSelection('platformPills', selectedPlatform);
+    updateStartRideButtonState();
+  }
+}
+
+/* ============================================
+   END RIDE MODAL
+   ============================================ */
+function bindEndRideModal() {
+  $('cancelEndRide').addEventListener('click', closeEndRideModal);
+  $('endRideOverlay').addEventListener('click', (e) => {
+    if (e.target.id === 'endRideOverlay') closeEndRideModal();
+  });
+
+  $('rideCancelledToggle').addEventListener('click', () => {
+    isRideCancelled = !isRideCancelled;
+    $('rideCancelledToggleState').textContent = isRideCancelled ? 'Yes' : 'No';
+    $('rideCancelledToggle').classList.toggle('is-active', isRideCancelled);
+    document.querySelectorAll('#endRideForm .money-field').forEach(el => { el.hidden = isRideCancelled; });
+    if (isRideCancelled) $('extrasFields').hidden = true;
+    updateFinishRideButtonState();
+  });
+
+  $('extrasToggle').addEventListener('click', () => {
+    const isOpen = $('extrasToggle').dataset.open === 'true';
+    $('extrasToggle').dataset.open = String(!isOpen);
+    $('extrasFields').hidden = isOpen;
+    $('extrasToggle').textContent = isOpen ? '+ Add tip / extra charge' : '− Hide tip / extra charge';
+  });
+
+  $('getDropBtn').addEventListener('click', async () => {
+    await fetchGpsInto('dropAddress', 'dropGpsStatus', false);
+    await maybeComputeDistance();
+    updateFinishRideButtonState();
+  });
+
+  $('dropAddress').addEventListener('input', updateFinishRideButtonState);
+  $('fare').addEventListener('input', updateFinishRideButtonState);
+
+  $('paymentPills').addEventListener('click', (e) => {
+    const btn = e.target.closest('.pill');
+    if (!btn) return;
+    selectedPayment = btn.dataset.value;
+    localStorage.setItem('lastPayment', selectedPayment);
+    updatePillSelection('paymentPills', selectedPayment);
+    updateFinishRideButtonState();
+  });
+
+  $('endRideForm').addEventListener('submit', onFinishRide);
+}
+
+async function maybeComputeDistance() {
+  const dropLat = $('dropAddress').dataset.lat ? Number($('dropAddress').dataset.lat) : null;
+  const dropLng = $('dropAddress').dataset.lng ? Number($('dropAddress').dataset.lng) : null;
+
+  if (pendingRide.pickupLat == null || dropLat == null) {
+    lastComputedDistance = null;
+    $('distanceField').hidden = true;
+    return;
   }
 
-  setTimeout(() => { saveBtnText.textContent = 'Log ride'; saveBtn.disabled = false; }, 900);
+  $('distanceField').hidden = false;
+  $('distanceDisplay').textContent = 'Calculating…';
+  const result = await routeDistanceKm(pendingRide.pickupLat, pendingRide.pickupLng, dropLat, dropLng);
+  lastComputedDistance = result;
+  $('distanceDisplay').textContent = `${result.km} km${result.estimated ? ' (estimated)' : ''}`;
+}
 
-  // Reset only the per-ride fields — platform/zone/payment/cancelled-state carry over
+function openEndRideModal() {
+  isRideCancelled = false;
+  lastComputedDistance = null;
+  $('rideCancelledToggleState').textContent = 'No';
+  $('rideCancelledToggle').classList.remove('is-active');
+  document.querySelectorAll('#endRideForm .money-field').forEach(el => { el.hidden = false; });
+  $('dropAddress').value = '';
+  delete $('dropAddress').dataset.lat;
+  delete $('dropAddress').dataset.lng;
+  $('dropGpsStatus').textContent = '';
+  $('distanceField').hidden = true;
   $('fare').value = '';
   $('tip').value = '';
   $('extra').value = '';
-  $('dropLocation').value = '';
   $('rideNotes').value = '';
-  if (!isCancelled) $('fare').focus();
+  $('extrasFields').hidden = true;
+  $('extrasToggle').dataset.open = 'false';
+  $('extrasToggle').textContent = '+ Add tip / extra charge';
+  updatePillSelection('paymentPills', selectedPayment);
+  $('finishRideBtn').disabled = true;
+  $('endRideOverlay').hidden = false;
+}
+
+function closeEndRideModal() {
+  $('endRideOverlay').hidden = true;
+}
+
+function updateFinishRideButtonState() {
+  if (isRideCancelled) {
+    $('finishRideBtn').disabled = false;
+    return;
+  }
+  const hasDrop = $('dropAddress').value.trim() !== '';
+  const hasFare = $('fare').value !== '' && !isNaN(Number($('fare').value)) && Number($('fare').value) >= 0;
+  const hasPayment = !!selectedPayment;
+  $('finishRideBtn').disabled = !(hasDrop && hasFare && hasPayment);
+}
+
+function onFinishRide(e) {
+  e.preventDefault();
+  if (!pendingRide) return;
+
+  const dropLat = $('dropAddress').dataset.lat ? Number($('dropAddress').dataset.lat) : null;
+  const dropLng = $('dropAddress').dataset.lng ? Number($('dropAddress').dataset.lng) : null;
+
+  const entry = {
+    date: pendingRide.date,
+    time: pendingRide.startTime,
+    platform: pendingRide.platform,
+    pickupZone: pendingRide.pickupZone,
+    pickupAddress: pendingRide.pickupAddress,
+    pickupLat: pendingRide.pickupLat,
+    pickupLng: pendingRide.pickupLng,
+    rideStartTime: pendingRide.startTime,
+    rideEndTime: nowTimeStr(),
+    dropLocation: isRideCancelled ? '' : $('dropAddress').value.trim(),
+    dropLat: isRideCancelled ? null : dropLat,
+    dropLng: isRideCancelled ? null : dropLng,
+    distanceKm: isRideCancelled ? null : (lastComputedDistance ? lastComputedDistance.km : null),
+    fare: isRideCancelled ? 0 : (Number($('fare').value) || 0),
+    tip: isRideCancelled ? 0 : (Number($('tip').value) || 0),
+    extra: isRideCancelled ? 0 : (Number($('extra').value) || 0),
+    paymentMode: isRideCancelled ? '' : selectedPayment,
+    cancelled: isRideCancelled,
+    notes: $('rideNotes').value || ''
+  };
+
+  const finishBtn = $('finishRideBtn');
+  finishBtn.disabled = true;
+  finishBtn.textContent = 'Saving…';
+
+  rides.push(entry);
+  saveCachedData();
+  pendingRide = null;
+  savePendingRideToStorage(null);
+  closeEndRideModal();
+  renderRideSection();
+  renderTodayStrip();
+  renderRecentRides();
+
+  postToSheet({ kind: 'ride', ...entry })
+    .then(() => setSyncState('live'))
+    .catch(err => { console.error(err); setSyncState('error'); })
+    .finally(() => { finishBtn.textContent = 'Finish ride'; finishBtn.disabled = false; });
 }
 
 /* ============================================
@@ -397,11 +541,12 @@ function renderRecentRides() {
         </div>
       `;
     }
+    const distanceLabel = r.distanceKm ? ` · ${r.distanceKm} km` : '';
     const route = r.dropLocation ? `${shortZone(r.pickupZone)} → ${r.dropLocation}` : shortZone(r.pickupZone);
     return `
       <div class="recent-row">
         <span class="recent-time">${r.time || '—'}</span>
-        <span class="recent-mid">${r.platform} · ${route}</span>
+        <span class="recent-mid">${r.platform} · ${route}${distanceLabel}</span>
         <span class="recent-amount">${formatMoney(rideTotal(r))}</span>
       </div>
     `;
