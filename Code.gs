@@ -1,5 +1,5 @@
 /**
- * Gig Tracker — Google Sheets backend (v4: GPS pickup/drop, route distance).
+ * Gig Tracker — Google Sheets backend (v5: round-trip distance, decimal fares).
  *
  * Setup:
  * 1. In your Sheet, keep two tabs named exactly:  Days   and   Rides
@@ -7,8 +7,8 @@
  *    Days tab — row 1 headers (A → I), unchanged from before:
  *    Date | Start Time | Start KM | End Time | End KM | Total KM | Fuel Cost | Bonus | Notes
  *
- *    Rides tab — row 1 headers (A → S):
- *    Timestamp | Date | Platform | Pickup Zone | Pickup Address | Pickup Lat | Pickup Lng | Start Time | Drop Location | Drop Lat | Drop Lng | Distance KM | End Time | Fare | Tip | Extra Charges | Payment Mode | Cancelled | Notes
+ *    Rides tab — row 1 headers (A → T):
+ *    Timestamp | Date | Platform | Pickup Zone | Pickup Address | Pickup Lat | Pickup Lng | Start Time | Drop Location | Drop Lat | Drop Lng | Distance KM | Round Trip KM | End Time | Fare | Tip | Extra Charges | Payment Mode | Cancelled | Notes
  *
  * 2. Extensions > Apps Script. Delete any existing code and paste this file in.
  * 3. Deploy > Manage deployments > pencil icon > Version: New version > Deploy.
@@ -59,6 +59,7 @@ function handleRide(ss, body) {
     cancelled ? '' : (body.dropLat != null ? body.dropLat : ''),     // Drop Lat
     cancelled ? '' : (body.dropLng != null ? body.dropLng : ''),     // Drop Lng
     cancelled ? '' : (body.distanceKm != null ? body.distanceKm : ''), // Distance KM
+    cancelled ? '' : (body.roundTripKm != null ? body.roundTripKm : ''), // Round Trip KM
     body.rideEndTime || '',                                          // End Time
     cancelled ? 0 : (body.fare || 0),                                // Fare
     cancelled ? 0 : (body.tip || 0),                                 // Tip

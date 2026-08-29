@@ -253,6 +253,7 @@ function normalizeRideRow(row) {
     dropLat: row['Drop Lat'] !== '' && row['Drop Lat'] != null ? Number(row['Drop Lat']) : null,
     dropLng: row['Drop Lng'] !== '' && row['Drop Lng'] != null ? Number(row['Drop Lng']) : null,
     distanceKm: row['Distance KM'] !== '' && row['Distance KM'] != null ? Number(row['Distance KM']) : null,
+    roundTripKm: row['Round Trip KM'] !== '' && row['Round Trip KM'] != null ? Number(row['Round Trip KM']) : null,
     rideEndTime: row['End Time'] || '',
     fare: Number(row['Fare']) || 0,
     tip: Number(row['Tip']) || 0,
@@ -338,10 +339,35 @@ function sum(list, fn) {
 }
 
 function formatMoney(n, withSymbol = true) {
-  const rounded = Math.round(n);
-  const formatted = Math.abs(rounded).toLocaleString('en-IN');
+  const rounded = Math.round(n * 100) / 100; // round to nearest paisa
+  const hasDecimals = Math.abs(rounded % 1) > 0.001;
+  const formatted = Math.abs(rounded).toLocaleString('en-IN', {
+    minimumFractionDigits: hasDecimals ? 2 : 0,
+    maximumFractionDigits: 2
+  });
   const sign = rounded < 0 ? '-' : '';
   return withSymbol ? `${sign}₹${formatted}` : `${sign}${formatted}`;
+}
+
+/* ============================================
+   SAVED WAREHOUSE
+   For hub-and-spoke platforms (e.g. Blinkit) where
+   every ride starts/ends at the same fixed point.
+   Saved once, reused with one tap instead of a fresh
+   GPS fetch every single order.
+   ============================================ */
+function loadSavedWarehouse() {
+  const raw = localStorage.getItem('savedWarehouse');
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveSavedWarehouse(warehouse) {
+  localStorage.setItem('savedWarehouse', JSON.stringify(warehouse));
 }
 
 function formatDate(dateStr) {

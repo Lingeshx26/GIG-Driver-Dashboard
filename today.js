@@ -265,6 +265,7 @@ function bindStartRideForm() {
     localStorage.setItem('lastPlatform', selectedPlatform);
     updatePillSelection('platformPills', selectedPlatform);
     updateStartRideButtonState();
+    updateWarehouseButtonVisibility();
   });
 
   $('pickupZone').addEventListener('change', () => {
@@ -272,13 +273,59 @@ function bindStartRideForm() {
     updateStartRideButtonState();
   });
 
-  $('pickupAddress').addEventListener('input', updateStartRideButtonState);
+  $('pickupAddress').addEventListener('input', () => {
+    updateStartRideButtonState();
+    maybeShowSaveWarehouseLink();
+  });
 
-  $('getPickupBtn').addEventListener('click', () => fetchGpsInto('pickupAddress', 'pickupGpsStatus', true));
+  $('getPickupBtn').addEventListener('click', async () => {
+    await fetchGpsInto('pickupAddress', 'pickupGpsStatus', true);
+    maybeShowSaveWarehouseLink();
+  });
+
+  $('useWarehouseBtn').addEventListener('click', () => {
+    const wh = loadSavedWarehouse();
+    if (!wh) return;
+    $('pickupAddress').value = wh.address;
+    $('pickupAddress').dataset.lat = wh.lat;
+    $('pickupAddress').dataset.lng = wh.lng;
+    $('pickupGpsStatus').textContent = 'Filled from your saved warehouse';
+    $('pickupGpsStatus').className = 'gps-status gps-status-ok';
+    $('saveWarehouseLink').hidden = true;
+    updateStartRideButtonState();
+  });
+
+  $('saveWarehouseLink').addEventListener('click', () => {
+    const lat = $('pickupAddress').dataset.lat;
+    const lng = $('pickupAddress').dataset.lng;
+    if (!lat || !lng) return;
+    saveSavedWarehouse({ address: $('pickupAddress').value.trim(), lat: Number(lat), lng: Number(lng) });
+    $('saveWarehouseLink').hidden = true;
+    updateWarehouseButtonVisibility();
+  });
 
   $('startRideForm').addEventListener('submit', onStartRide);
 
   $('endRideBtn').addEventListener('click', openEndRideModal);
+
+  updateWarehouseButtonVisibility();
+}
+
+// Warehouse quick-fill only makes sense for hub-and-spoke platforms like
+// Blinkit — hide it entirely for platforms where every pickup is different.
+function updateWarehouseButtonVisibility() {
+  const wh = loadSavedWarehouse();
+  const relevant = selectedPlatform === 'Blinkit';
+  $('useWarehouseBtn').hidden = !(relevant && wh);
+  $('useWarehouseDropBtn').hidden = !(relevant && wh);
+}
+
+// After a real GPS capture (not a warehouse quick-fill), offer to save this
+// point as the warehouse — but only once, and only if nothing's saved yet.
+function maybeShowSaveWarehouseLink() {
+  const hasCoords = !!$('pickupAddress').dataset.lat;
+  const alreadySaved = !!loadSavedWarehouse();
+  $('saveWarehouseLink').hidden = !(selectedPlatform === 'Blinkit' && hasCoords && !alreadySaved);
 }
 
 function updatePillSelection(groupId, value) {
@@ -312,6 +359,7 @@ function onStartRide(e) {
   delete $('pickupAddress').dataset.lat;
   delete $('pickupAddress').dataset.lng;
   $('pickupGpsStatus').textContent = '';
+  $('saveWarehouseLink').hidden = true;
 
   renderRideSection();
 }
@@ -335,6 +383,7 @@ function renderRideSection() {
   } else {
     updatePillSelection('platformPills', selectedPlatform);
     updateStartRideButtonState();
+    updateWarehouseButtonVisibility();
   }
 }
 
@@ -369,8 +418,21 @@ function bindEndRideModal() {
     updateFinishRideButtonState();
   });
 
+  $('useWarehouseDropBtn').addEventListener('click', async () => {
+    const wh = loadSavedWarehouse();
+    if (!wh) return;
+    $('dropAddress').value = wh.address;
+    $('dropAddress').dataset.lat = wh.lat;
+    $('dropAddress').dataset.lng = wh.lng;
+    $('dropGpsStatus').textContent = 'Filled from your saved warehouse';
+    $('dropGpsStatus').className = 'gps-status gps-status-ok';
+    await maybeComputeDistance();
+    updateFinishRideButtonState();
+  });
+
   $('dropAddress').addEventListener('input', updateFinishRideButtonState);
   $('fare').addEventListener('input', updateFinishRideButtonState);
+  $('roundTripToggle').addEventListener('change', maybeComputeDistance);
 
   $('paymentPills').addEventListener('click', (e) => {
     const btn = e.target.closest('.pill');
@@ -398,7 +460,14 @@ async function maybeComputeDistance() {
   $('distanceDisplay').textContent = 'Calculating…';
   const result = await routeDistanceKm(pendingRide.pickupLat, pendingRide.pickupLng, dropLat, dropLng);
   lastComputedDistance = result;
-  $('distanceDisplay').textContent = `${result.km} km${result.estimated ? ' (estimated)' : ''}`;
+
+  const isRoundTrip = $('roundTripToggle').checked;
+  if (isRoundTrip) {
+    const roundTripKm = Math.round(result.km * 2 * 10) / 10;
+    $('distanceDisplay').textContent = `${result.km} km one-way · ${roundTripKm} km round trip${result.estimated ? ' (estimated)' : ''}`;
+  } else {
+    $('distanceDisplay').textContent = `${result.km} km${result.estimated ? ' (estimated)' : ''}`;
+  }
 }
 
 function openEndRideModal() {
@@ -420,6 +489,14 @@ function openEndRideModal() {
   $('extrasToggle').dataset.open = 'false';
   $('extrasToggle').textContent = '+ Add tip / extra charge';
   updatePillSelection('paymentPills', selectedPayment);
+
+  // Round trip defaults ON for hub-and-spoke platforms like Blinkit, but always editable
+  $('roundTripToggle').checked = pendingRide && pendingRide.platform === 'Blinkit';
+  $('roundTripField').hidden = false;
+
+  const wh = loadSavedWarehouse();
+  $('useWarehouseDropBtn').hidden = !(pendingRide && pendingRide.platform === 'Blinkit' && wh);
+
   $('finishRideBtn').disabled = true;
   $('endRideOverlay').hidden = false;
 }
@@ -445,6 +522,8 @@ function onFinishRide(e) {
 
   const dropLat = $('dropAddress').dataset.lat ? Number($('dropAddress').dataset.lat) : null;
   const dropLng = $('dropAddress').dataset.lng ? Number($('dropAddress').dataset.lng) : null;
+  const isRoundTrip = !isRideCancelled && $('roundTripToggle').checked && lastComputedDistance;
+  const roundTripKm = isRoundTrip ? Math.round(lastComputedDistance.km * 2 * 10) / 10 : null;
 
   const entry = {
     date: pendingRide.date,
@@ -460,6 +539,7 @@ function onFinishRide(e) {
     dropLat: isRideCancelled ? null : dropLat,
     dropLng: isRideCancelled ? null : dropLng,
     distanceKm: isRideCancelled ? null : (lastComputedDistance ? lastComputedDistance.km : null),
+    roundTripKm: roundTripKm,
     fare: isRideCancelled ? 0 : (Number($('fare').value) || 0),
     tip: isRideCancelled ? 0 : (Number($('tip').value) || 0),
     extra: isRideCancelled ? 0 : (Number($('extra').value) || 0),
@@ -541,7 +621,7 @@ function renderRecentRides() {
         </div>
       `;
     }
-    const distanceLabel = r.distanceKm ? ` · ${r.distanceKm} km` : '';
+    const distanceLabel = r.roundTripKm ? ` · ${r.roundTripKm} km RT` : (r.distanceKm ? ` · ${r.distanceKm} km` : '');
     const route = r.dropLocation ? `${shortZone(r.pickupZone)} → ${r.dropLocation}` : shortZone(r.pickupZone);
     return `
       <div class="recent-row">
