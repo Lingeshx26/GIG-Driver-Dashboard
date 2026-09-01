@@ -137,12 +137,24 @@ function readSheet(sheet) {
       headers.forEach((h, i) => {
         let val = row[i];
         if (val instanceof Date) {
-          val = Utilities.formatDate(val, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
+          val = formatCellDate(val);
         }
         obj[h] = val;
       });
       return obj;
     });
+}
+
+// Google Sheets silently converts strings like "20:42" into a Date object
+// with a placeholder date of Dec 30, 1899 (the spreadsheet "zero date" for
+// time-only values). Detect that pattern and return just the time, since
+// that phantom date was never meant to be shown.
+function formatCellDate(date) {
+  const isTimeOnly = date.getFullYear() === 1899 && date.getMonth() === 11 && date.getDate() === 30;
+  if (isTimeOnly) {
+    return Utilities.formatDate(date, Session.getScriptTimeZone(), 'HH:mm');
+  }
+  return Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm:ss');
 }
 
 function jsonResponse(obj) {
