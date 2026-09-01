@@ -149,6 +149,7 @@ function updateFinishDayButtonState() {
 function openEndDayModal() {
   $('endKm').value = '';
   $('fuelCost').value = '';
+  $('spending').value = '';
   $('bonus').value = '';
   $('dayNotes').value = '';
   $('finishDayBtn').disabled = true;
@@ -170,10 +171,11 @@ function onEndDaySubmit(e) {
     return;
   }
   if ($('fuelCost').value === '' || isNaN(fuelCost) || fuelCost < 0) {
-    alert('Fuel & expenses is required — enter 0 if you spent nothing today.');
+    alert('Fuel cost is required — enter 0 if you spent nothing on fuel today.');
     return;
   }
 
+  const spending = Number($('spending').value) || 0;
   const bonus = Number($('bonus').value) || 0;
   const notes = $('dayNotes').value || '';
   const endTime = nowTimeStr();
@@ -187,6 +189,7 @@ function onEndDaySubmit(e) {
     endKm,
     totalKm,
     fuelCost,
+    spending,
     bonus,
     notes
   };
@@ -198,7 +201,7 @@ function onEndDaySubmit(e) {
 
   const todayRides = rides.filter(r => r.date === finishedDay.date);
   const gross = sum(todayRides, rideTotal);
-  const net = gross + bonus - fuelCost;
+  const net = gross + bonus - fuelCost - spending;
   const cancelledCount = todayRides.filter(r => r.cancelled).length;
 
   activeDay = null;

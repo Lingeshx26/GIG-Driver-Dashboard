@@ -25,9 +25,9 @@ Two pages:
 
 Two tabs, named exactly:
 
-**`Days`** — row 1 headers, A → I (unchanged):
+**`Days`** — row 1 headers, A → J:
 ```
-Date | Start Time | Start KM | End Time | End KM | Total KM | Fuel Cost | Bonus | Notes
+Date | Start Time | Start KM | End Time | End KM | Total KM | Fuel Cost | Spending | Bonus | Notes
 ```
 
 **`Rides`** — row 1 headers, A → S:

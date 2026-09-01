@@ -1,13 +1,13 @@
 /**
- * Gig Tracker — Google Sheets backend (v5: round-trip distance, decimal fares).
+ * Gig Tracker — Google Sheets backend (v6: day spending, gross tracking).
  *
  * Setup:
  * 1. In your Sheet, keep two tabs named exactly:  Days   and   Rides
  *
- *    Days tab — row 1 headers (A → I), unchanged from before:
- *    Date | Start Time | Start KM | End Time | End KM | Total KM | Fuel Cost | Bonus | Notes
+ *    Days tab — row 1 headers (A → J):
+ *    Date | Start Time | Start KM | End Time | End KM | Total KM | Fuel Cost | Spending | Bonus | Notes
  *
- *    Rides tab — row 1 headers (A → T):
+ *    Rides tab — row 1 headers (A → T), unchanged from before:
  *    Timestamp | Date | Platform | Pickup Zone | Pickup Address | Pickup Lat | Pickup Lng | Start Time | Drop Location | Drop Lat | Drop Lng | Distance KM | Round Trip KM | End Time | Fare | Tip | Extra Charges | Payment Mode | Cancelled | Notes
  *
  * 2. Extensions > Apps Script. Delete any existing code and paste this file in.
@@ -82,7 +82,7 @@ function handleDayStart(ss, body) {
     body.date || '',
     body.startTime || '',
     body.startKm || 0,
-    '', '', '', '', '', '' // end fields blank until day_end
+    '', '', '', '', '', '', '' // end fields blank until day_end
   ]);
 }
 
@@ -99,17 +99,19 @@ function handleDayEnd(ss, body) {
       body.endKm || 0,
       body.totalKm || 0,
       body.fuelCost || 0,
+      body.spending || 0,
       body.bonus || 0,
       body.notes || ''
     ]);
     return;
   }
-  // Columns D–I: End Time, End KM, Total KM, Fuel Cost, Bonus, Notes
-  sheet.getRange(rowIndex, 4, 1, 6).setValues([[
+  // Columns D–J: End Time, End KM, Total KM, Fuel Cost, Spending, Bonus, Notes
+  sheet.getRange(rowIndex, 4, 1, 7).setValues([[
     body.endTime || '',
     body.endKm || 0,
     body.totalKm || 0,
     body.fuelCost || 0,
+    body.spending || 0,
     body.bonus || 0,
     body.notes || ''
   ]]);
@@ -146,11 +148,13 @@ function readSheet(sheet) {
 }
 
 // Google Sheets silently converts strings like "20:42" into a Date object
-// with a placeholder date of Dec 30, 1899 (the spreadsheet "zero date" for
-// time-only values). Detect that pattern and return just the time, since
-// that phantom date was never meant to be shown.
+// carrying a placeholder date near the spreadsheet's "zero date" (around
+// Dec 1899 / Jan 1900) — the exact placeholder date can vary slightly
+// depending on how the value entered the cell. Since nothing in this app
+// legitimately produces a real calendar date before 1970, treat any Date
+// that old as a time-only artifact and return just the time.
 function formatCellDate(date) {
-  const isTimeOnly = date.getFullYear() === 1899 && date.getMonth() === 11 && date.getDate() === 30;
+  const isTimeOnly = date.getFullYear() < 1970;
   if (isTimeOnly) {
     return Utilities.formatDate(date, Session.getScriptTimeZone(), 'HH:mm');
   }

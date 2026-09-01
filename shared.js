@@ -273,6 +273,7 @@ function normalizeDayRow(row) {
     endKm: Number(row['End KM']) || 0,
     totalKm: Number(row['Total KM']) || 0,
     fuelCost: Number(row['Fuel Cost']) || 0,
+    spending: Number(row['Spending']) || 0,
     bonus: Number(row['Bonus']) || 0,
     notes: row['Notes'] || ''
   };

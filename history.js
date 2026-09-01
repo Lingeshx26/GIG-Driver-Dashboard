@@ -46,7 +46,7 @@ function renderRangeSummary() {
   relevantDates.forEach(date => {
     const dayRec = relevantDays.find(d => d.date === date);
     const gross = sum(relevantRides.filter(r => r.date === date), rideTotal);
-    totalNet += dayRec ? (gross + dayRec.bonus - dayRec.fuelCost) : gross;
+    totalNet += dayRec ? (gross + dayRec.bonus - dayRec.fuelCost - (dayRec.spending || 0)) : gross;
   });
 
   const daysWorked = relevantDates.length;
@@ -134,19 +134,22 @@ function renderDayTable() {
   const closedDays = [...days].filter(d => d.endTime).sort((a, b) => b.date.localeCompare(a.date));
 
   if (closedDays.length === 0) {
-    body.innerHTML = '<tr class="empty-row"><td colspan="6">No days closed out yet.</td></tr>';
+    body.innerHTML = '<tr class="empty-row"><td colspan="8">No days closed out yet.</td></tr>';
     return;
   }
 
   body.innerHTML = closedDays.map(d => {
     const gross = sum(rides.filter(r => r.date === d.date), rideTotal);
-    const net = gross + d.bonus - d.fuelCost;
+    const spending = d.spending || 0;
+    const net = gross + d.bonus - d.fuelCost - spending;
     const perKm = d.totalKm > 0 ? Math.round(net / d.totalKm) : 0;
     return `
       <tr>
         <td>${formatDate(d.date)}</td>
         <td>${d.totalKm.toFixed(1)}</td>
+        <td>${formatMoney(gross)}</td>
         <td>${formatMoney(d.fuelCost)}</td>
+        <td>${formatMoney(spending)}</td>
         <td>${formatMoney(d.bonus)}</td>
         <td class="${net >= 0 ? 'net-positive' : 'net-negative'}">${formatMoney(net)}</td>
         <td>${formatMoney(perKm)}</td>
