@@ -242,7 +242,7 @@ async function loadFromSheet() {
 
 function normalizeRideRow(row) {
   return {
-    date: row['Date'] || '',
+    date: String(row['Date'] || '').slice(0, 10),
     time: row['Start Time'] || '',
     platform: row['Platform'] || '',
     pickupZone: row['Pickup Zone'] || '',
