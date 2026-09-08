@@ -318,7 +318,7 @@ function bindStartRideForm() {
 // Blinkit — hide it entirely for platforms where every pickup is different.
 function updateWarehouseButtonVisibility() {
   const wh = loadSavedWarehouse();
-  const relevant = selectedPlatform === 'Blinkit';
+  const relevant = HUB_PLATFORMS.includes(selectedPlatform);
   $('useWarehouseBtn').hidden = !(relevant && wh);
   $('useWarehouseDropBtn').hidden = !(relevant && wh);
 }
@@ -328,7 +328,7 @@ function updateWarehouseButtonVisibility() {
 function maybeShowSaveWarehouseLink() {
   const hasCoords = !!$('pickupAddress').dataset.lat;
   const alreadySaved = !!loadSavedWarehouse();
-  $('saveWarehouseLink').hidden = !(selectedPlatform === 'Blinkit' && hasCoords && !alreadySaved);
+  $('saveWarehouseLink').hidden = !(HUB_PLATFORMS.includes(selectedPlatform) && hasCoords && !alreadySaved);
 }
 
 function updatePillSelection(groupId, value) {
@@ -493,12 +493,12 @@ function openEndRideModal() {
   $('extrasToggle').textContent = '+ Add tip / extra charge';
   updatePillSelection('paymentPills', selectedPayment);
 
-  // Round trip defaults ON for hub-and-spoke platforms like Blinkit, but always editable
-  $('roundTripToggle').checked = pendingRide && pendingRide.platform === 'Blinkit';
+  // Round trip defaults ON for hub-and-spoke platforms (Blinkit, Instamart), but always editable
+  $('roundTripToggle').checked = !!(pendingRide && HUB_PLATFORMS.includes(pendingRide.platform));
   $('roundTripField').hidden = false;
 
   const wh = loadSavedWarehouse();
-  $('useWarehouseDropBtn').hidden = !(pendingRide && pendingRide.platform === 'Blinkit' && wh);
+  $('useWarehouseDropBtn').hidden = !(pendingRide && HUB_PLATFORMS.includes(pendingRide.platform) && wh);
 
   $('finishRideBtn').disabled = true;
   $('endRideOverlay').hidden = false;

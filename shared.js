@@ -23,7 +23,13 @@ const ZONES = [
   'Other'
 ];
 
-const PLATFORMS = ['Rapido', 'Blinkit'];
+const PLATFORMS = ['Rapido', 'Blinkit', 'Instamart'];
+
+// Platforms that always run from a fixed warehouse/dark-store point (pick up,
+// drop, return to the same spot) — these get the warehouse quick-fill button
+// and default to Round Trip ON at End Ride. Add more platform names here if
+// you pick up another hub-based gig later.
+const HUB_PLATFORMS = ['Blinkit', 'Instamart'];
 
 // Rough centroid coordinates for each zone, used only to auto-suggest the
 // nearest match after a GPS fix. Approximate on purpose — always editable,
@@ -384,4 +390,16 @@ function shortZone(zone) {
 function isPeak(time) {
   if (!time) return false;
   return PEAK_WINDOWS.some(w => time >= w.start && time <= w.end);
+}
+
+/* ============================================
+   PWA — register the service worker so this
+   qualifies as installable ("Add to Home Screen")
+   ============================================ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((err) => {
+      console.warn('Service worker registration failed:', err);
+    });
+  });
 }
