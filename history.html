@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ride Log — History</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#101214">
+<link rel="icon" href="icons/favicon.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ride Log">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -29,6 +39,7 @@
   <nav class="page-nav">
     <a href="index.html" class="page-nav-link">Today</a>
     <a href="history.html" class="page-nav-link is-active">History</a>
+    <a href="calculator.html" class="page-nav-link">Calculator</a>
   </nav>
 
   <!-- ===== RANGE SUMMARY STRIP ===== -->
@@ -66,25 +77,11 @@
     </div>
   </section>
 
-  <!-- ===== RIDE LOG TABLE ===== -->
+  <!-- ===== RIDE LOG (grouped by date, collapsible) ===== -->
   <section class="log-table-section">
     <h2><span class="section-num">01</span> Ride-by-ride log</h2>
-    <div class="table-wrap">
-      <table class="log-table" id="rideTable">
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Platform</th>
-            <th>From → To</th>
-            <th>KM</th>
-            <th>Total</th>
-            <th>Pay</th>
-          </tr>
-        </thead>
-        <tbody id="rideTableBody">
-          <tr class="empty-row"><td colspan="6">No rides logged yet.</td></tr>
-        </tbody>
-      </table>
+    <div id="rideLogAccordion" class="accordion">
+      <p class="recent-empty">No rides logged yet.</p>
     </div>
   </section>
 

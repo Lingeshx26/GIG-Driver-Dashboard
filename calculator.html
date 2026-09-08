@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ride Log — Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="dash">
+
+  <!-- ===== HEADER ===== -->
+  <header class="cluster-header">
+    <div class="header-left">
+      <span class="eyebrow">GIG TRACKER · COIMBATORE</span>
+      <h1>Calculator</h1>
+      <span class="bike-tag">Yamaha Rayzr Street Rally</span>
+    </div>
+  </header>
+
+  <nav class="page-nav">
+    <a href="index.html" class="page-nav-link">Today</a>
+    <a href="history.html" class="page-nav-link">History</a>
+    <a href="calculator.html" class="page-nav-link is-active">Calculator</a>
+  </nav>
+
+  <!-- ===== CALCULATOR ===== -->
+  <section class="calc-wrap">
+    <div class="calc-display">
+      <div class="calc-expression" id="calcExpression">&nbsp;</div>
+      <div class="calc-current" id="calcCurrent">0</div>
+    </div>
+
+    <div class="calc-grid">
+      <button type="button" class="calc-btn calc-btn-fn" data-action="clear">C</button>
+      <button type="button" class="calc-btn calc-btn-fn" data-action="backspace">⌫</button>
+      <button type="button" class="calc-btn calc-btn-fn" data-action="percent">%</button>
+      <button type="button" class="calc-btn calc-btn-op" data-action="op" data-op="÷">÷</button>
+
+      <button type="button" class="calc-btn" data-action="digit" data-digit="7">7</button>
+      <button type="button" class="calc-btn" data-action="digit" data-digit="8">8</button>
+      <button type="button" class="calc-btn" data-action="digit" data-digit="9">9</button>
+      <button type="button" class="calc-btn calc-btn-op" data-action="op" data-op="×">×</button>
+
+      <button type="button" class="calc-btn" data-action="digit" data-digit="4">4</button>
+      <button type="button" class="calc-btn" data-action="digit" data-digit="5">5</button>
+      <button type="button" class="calc-btn" data-action="digit" data-digit="6">6</button>
+      <button type="button" class="calc-btn calc-btn-op" data-action="op" data-op="−">−</button>
+
+      <button type="button" class="calc-btn" data-action="digit" data-digit="1">1</button>
+      <button type="button" class="calc-btn" data-action="digit" data-digit="2">2</button>
+      <button type="button" class="calc-btn" data-action="digit" data-digit="3">3</button>
+      <button type="button" class="calc-btn calc-btn-op" data-action="op" data-op="+">+</button>
+
+      <button type="button" class="calc-btn calc-btn-wide" data-action="digit" data-digit="0">0</button>
+      <button type="button" class="calc-btn" data-action="decimal">.</button>
+      <button type="button" class="calc-btn calc-btn-equals" data-action="equals">=</button>
+    </div>
+  </section>
+
+  <footer class="dash-footer">
+    <p>Quick math while you're riding — nothing here is saved or synced.</p>
+  </footer>
+
+</div>
+
+<script src="calculator.js"></script>
+</body>
+</html>

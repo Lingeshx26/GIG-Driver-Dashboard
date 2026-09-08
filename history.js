@@ -88,42 +88,82 @@ function topGroup(list, key) {
    RIDE LOG TABLE
    ============================================ */
 function renderRideTable() {
-  const body = $('rideTableBody');
+  const container = $('rideLogAccordion');
   const sorted = [...rides].sort((a, b) => {
     if (a.date !== b.date) return b.date.localeCompare(a.date);
     return (b.time || '').localeCompare(a.time || '');
-  }).slice(0, 150); // keep the DOM light; full history always lives in the Sheet
+  }).slice(0, 300); // keep the DOM bounded; full history always lives in the Sheet
 
   if (sorted.length === 0) {
-    body.innerHTML = '<tr class="empty-row"><td colspan="5">No rides logged yet.</td></tr>';
+    container.innerHTML = '<p class="recent-empty">No rides logged yet.</p>';
     return;
   }
 
-  body.innerHTML = sorted.map(r => {
-    if (r.cancelled) {
-      return `
-        <tr class="row-cancelled">
-          <td>${r.time || '—'}</td>
-          <td>${r.platform}</td>
-          <td>${shortZone(r.pickupZone)} · cancelled</td>
-          <td>—</td>
-          <td>—</td>
-          <td>—</td>
-        </tr>
-      `;
-    }
-    const route = r.dropLocation ? `${shortZone(r.pickupZone)} → ${r.dropLocation}` : shortZone(r.pickupZone);
+  // Group rides by date, preserving the most-recent-first order
+  const dateOrder = [];
+  const grouped = {};
+  sorted.forEach(r => {
+    if (!grouped[r.date]) { grouped[r.date] = []; dateOrder.push(r.date); }
+    grouped[r.date].push(r);
+  });
+
+  container.innerHTML = dateOrder.map((date, i) => {
+    const dayRides = grouped[date];
+    const activeRides = dayRides.filter(r => !r.cancelled);
+    const dayGross = sum(activeRides, rideTotal);
+    const rows = dayRides.map(rideRowHtml).join('');
+
     return `
-      <tr>
-        <td>${isPeak(r.time) ? '<span class="peak-dot" title="Peak hours"></span>' : ''}${r.time || '—'}</td>
-        <td>${r.platform}</td>
-        <td>${route}</td>
-        <td>${r.distanceKm != null ? r.distanceKm + ' km' + (r.roundTripKm ? ` (RT ${r.roundTripKm})` : '') : '—'}</td>
-        <td>${formatMoney(rideTotal(r))}</td>
-        <td><span class="pay-tag ${r.paymentMode === 'Cash' ? 'pay-tag-cash' : 'pay-tag-upi'}">${r.paymentMode}</span></td>
-      </tr>
+      <details class="date-group" ${i === 0 ? 'open' : ''}>
+        <summary class="date-group-summary">
+          <span class="date-group-date">${formatDate(date)}</span>
+          <span class="date-group-meta">${dayRides.length} ride${dayRides.length === 1 ? '' : 's'} · ${formatMoney(dayGross)}</span>
+          <span class="date-group-chevron">▾</span>
+        </summary>
+        <div class="table-wrap date-group-table-wrap">
+          <table class="log-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Platform</th>
+                <th>From → To</th>
+                <th>KM</th>
+                <th>Total</th>
+                <th>Pay</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </details>
     `;
   }).join('');
+}
+
+function rideRowHtml(r) {
+  if (r.cancelled) {
+    return `
+      <tr class="row-cancelled">
+        <td>${r.time || '—'}</td>
+        <td>${r.platform}</td>
+        <td>${shortZone(r.pickupZone)} · cancelled</td>
+        <td>—</td>
+        <td>—</td>
+        <td>—</td>
+      </tr>
+    `;
+  }
+  const route = r.dropLocation ? `${shortZone(r.pickupZone)} → ${r.dropLocation}` : shortZone(r.pickupZone);
+  return `
+    <tr>
+      <td>${isPeak(r.time) ? '<span class="peak-dot" title="Peak hours"></span>' : ''}${r.time || '—'}</td>
+      <td>${r.platform}</td>
+      <td>${route}</td>
+      <td>${r.distanceKm != null ? r.distanceKm + ' km' + (r.roundTripKm ? ` (RT ${r.roundTripKm})` : '') : '—'}</td>
+      <td>${formatMoney(rideTotal(r))}</td>
+      <td><span class="pay-tag ${r.paymentMode === 'Cash' ? 'pay-tag-cash' : 'pay-tag-upi'}">${r.paymentMode}</span></td>
+    </tr>
+  `;
 }
 
 /* ============================================

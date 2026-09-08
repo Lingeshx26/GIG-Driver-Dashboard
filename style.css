@@ -920,6 +920,67 @@ input::placeholder { color: var(--text-faint); }
    ============================================ */
 .log-table-section { margin-bottom: 20px; }
 
+/* ============================================
+   ACCORDION (date-grouped ride log)
+   ============================================ */
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.date-group {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.date-group-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.date-group-summary::-webkit-details-marker { display: none; }
+.date-group-summary::marker { content: ''; }
+
+.date-group-date {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.date-group-meta {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-faint);
+  font-family: var(--font-display);
+}
+
+.date-group-chevron {
+  color: var(--text-faint);
+  transition: transform 0.15s ease;
+  font-size: 12px;
+}
+
+.date-group[open] .date-group-chevron {
+  transform: rotate(180deg);
+}
+
+.date-group[open] .date-group-summary {
+  border-bottom: 1px solid var(--hairline);
+}
+
+.date-group-table-wrap {
+  border: none;
+  border-radius: 0;
+  max-height: 320px;
+}
+
 .table-wrap {
   background: var(--surface);
   border: 1px solid var(--hairline);
@@ -1067,6 +1128,80 @@ input::placeholder { color: var(--text-faint); }
   .modal { border-radius: 16px; max-width: 420px; }
 }
 
+/* ============================================
+   CALCULATOR
+   ============================================ */
+.calc-wrap {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+
+.calc-display {
+  text-align: right;
+  padding: 20px 10px 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.calc-expression {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--text-faint);
+  min-height: 20px;
+}
+
+.calc-current {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 42px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.calc-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.calc-btn {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--text);
+  background: var(--surface-hi);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  padding: 18px 0;
+  cursor: pointer;
+  transition: filter 0.1s ease, transform 0.05s ease;
+}
+.calc-btn:active { transform: scale(0.96); filter: brightness(1.15); }
+
+.calc-btn-fn {
+  color: var(--amber);
+  background: var(--surface);
+}
+
+.calc-btn-op {
+  color: var(--bg);
+  background: var(--amber);
+  border-color: var(--amber);
+}
+
+.calc-btn-equals {
+  color: var(--bg);
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.calc-btn-wide {
+  grid-column: span 2;
+}
 /* ============================================
    RESPONSIVE
    ============================================ */
