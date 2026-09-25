@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ride Log — Today</title>
 
+<!-- Applies the saved theme before paint, so there's no flash of the wrong theme -->
+<script src="theme.js"></script>
+
 <!-- PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#101214">
@@ -31,6 +34,7 @@
       <span class="bike-tag">Yamaha Rayzr Street Rally</span>
     </div>
     <div class="header-right">
+      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle theme"></button>
       <span class="sync-dot" id="syncDot"></span>
       <span class="sync-label" id="syncLabel">Connecting…</span>
     </div>

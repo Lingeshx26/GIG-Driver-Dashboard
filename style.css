@@ -11,7 +11,7 @@
   --text-dim: #8b929b;
   --text-faint: #565c64;
 
-  --amber: #f5a623;
+  --amber: #F1F0DC;
   --amber-dim: #7a5416;
   --red: #e4572e;
   --red-dim: #5c2417;
@@ -24,6 +24,30 @@
   --font-body: 'Manrope', sans-serif;
 
   --radius: 10px;
+}
+
+/* ============================================
+   TOKENS — LIGHT THEME (sage)
+   Activated by data-theme="light" on <html>,
+   set and persisted by theme.js.
+   ============================================ */
+[data-theme="light"] {
+  --bg: #F1F0DC;
+  --surface: #FFFFFF;
+  --surface-hi: #D1DFC5;
+  --hairline: #A9C3A1;
+
+  --text: #33453A;
+  --text-dim: #526B5A;
+  --text-faint: #76977D;
+
+  /* Brand accent — was amber, now the sage swatch, so the active
+     tab, links, focus rings, etc. pick up the new theme color */
+  --amber: #526B5A;
+  --amber-dim: #C9D6C6;
+  --red-dim: #F7DAD1;
+  --green-dim: #DCEFC7;
+  --blue-dim: #D7EAF7;
 }
 
 * { box-sizing: border-box; }
@@ -42,8 +66,26 @@ html, body {
 
 body {
   background-image:
-    radial-gradient(circle at 15% 0%, rgba(245, 166, 35, 0.06), transparent 40%),
+    radial-gradient(circle at 15% 0%, rgba(241, 240, 220, 0.05), transparent 40%),
     radial-gradient(circle at 85% 10%, rgba(124, 181, 24, 0.05), transparent 35%);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+[data-theme="light"] body {
+  background-image:
+    radial-gradient(circle at 15% 0%, rgba(82, 107, 90, 0.08), transparent 40%),
+    radial-gradient(circle at 85% 10%, rgba(169, 195, 161, 0.22), transparent 35%);
+}
+
+/* Chip/tag text was tuned for light-on-dark dim backgrounds; flip it for
+   the light theme so cash/UPI badges stay legible on the paler tints. */
+[data-theme="light"] .pay-chip-cash,
+[data-theme="light"] .pay-tag-cash {
+  color: #2f5233;
+}
+[data-theme="light"] .pay-chip-upi,
+[data-theme="light"] .pay-tag-upi {
+  color: #1d4e73;
 }
 
 a { color: var(--amber); }
@@ -109,6 +151,28 @@ a { color: var(--amber); }
   background: var(--red);
   box-shadow: 0 0 6px rgba(228, 87, 46, 0.7);
 }
+
+/* ============================================
+   THEME TOGGLE
+   ============================================ */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  color: var(--text);
+  background: var(--surface-hi);
+  border: 1px solid var(--hairline);
+  border-radius: 11px;
+  padding: 0;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.05s ease;
+}
+.theme-toggle:hover { border-color: var(--amber); color: var(--amber); }
+.theme-toggle:active { transform: scale(0.92); }
+.theme-toggle svg { display: block; }
 
 /* ============================================
    PAGE NAV

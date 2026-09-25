@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ride Log — Calculator</title>
+<meta name="theme-color" content="#101214">
+
+<!-- Applies the saved theme before paint, so there's no flash of the wrong theme -->
+<script src="theme.js"></script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -19,6 +24,9 @@
       <span class="eyebrow">GIG TRACKER · COIMBATORE</span>
       <h1>Calculator</h1>
       <span class="bike-tag">Yamaha Rayzr Street Rally</span>
+    </div>
+    <div class="header-right">
+      <button type="button" class="theme-toggle" id="themeToggle" aria-label="Toggle theme"></button>
     </div>
   </header>
 
